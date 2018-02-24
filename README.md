@@ -1,0 +1,2 @@
+# mew
+memorize english words
