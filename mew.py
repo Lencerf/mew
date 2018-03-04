@@ -42,7 +42,7 @@ def dictation(database, word_to_learn):
 
 def test_word(database, word_to_learn, say_meaning=False):
     full_score = {w:0 for w in word_to_learn}
-    study_list_freq = {}  # frequency: wrodlist
+    study_list_freq = {}  # {frequency:{h:wordlist}}
     for w, v in word_to_learn.items():
         for m in v["m"]:
             if v['f'] not in study_list_freq:
@@ -131,9 +131,15 @@ def main():
                 word_to_learn[f'{word}@{list_name}'] = items
     while True:
         print("what do you want to do?")
+        function_names = [f['name'] for f in FUNCTION_TABLE]
         for index, function in enumerate(FUNCTION_TABLE):
             print(f'\t{index}:',  function['name'])
-        chosen_func_index = int(input())
+        input_text = input()
+        chosen_func_index = None
+        if input_text in function_names:
+            chosen_func_index = function_names.index(input_text)
+        else:
+            chosen_func_index = int(input_text)
         if chosen_func_index < len(FUNCTION_TABLE):
             FUNCTION_TABLE[chosen_func_index]['func'](database, word_to_learn)
     
