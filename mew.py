@@ -5,6 +5,12 @@ import sys
 import yaml
 from numpy.random import permutation
 from general_codes.utils import sayFinished
+import subprocess
+import os
+
+def pronounce(word):
+    say_path = '/'.join(os.path.realpath(__file__).split('/')[:-1]) + '/mew_say.py'
+    subprocess.Popen(['python3', say_path, word], stderr=subprocess.PIPE, stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=False)
 
 def red_text(text):
     return f'\033[31m {text}\033[00m'
@@ -15,11 +21,12 @@ def bold_text(text):
 
 def save_exit(database, word_to_learn):
     print('exiting...')
-    for word_at_list, items in word_to_learn.items():
-        word, list_name = word_at_list.split("@", 1)
-        database[list_name][word] = items
-    with open(sys.argv[1], 'w', encoding='utf-8') as f:
-        yaml.dump(database, f, allow_unicode=True)
+    if USED_TEST:
+        for word_at_list, items in word_to_learn.items():
+            word, list_name = word_at_list.split("@", 1)
+            database[list_name][word] = items
+        with open(sys.argv[1], 'w', encoding='utf-8') as f:
+            yaml.dump(database, f, allow_unicode=True)
     exit(0)
 
 def review(database, word_to_learn):
@@ -63,7 +70,8 @@ def test_word(database, word_to_learn, say_meaning=False):
                 else:
                     print(f"{meaning}: ", end='')
                 word_input = input()
-                if word == word_input:
+                pronounce(word)
+                if ''.join(filter(str.isalpha, word)) == ''.join(filter(str.isalpha, word_input)):
                     print(green_text("Correct!"), f"h={historical_h}")
                 elif word_input == "STOP":
                     broken = True
@@ -81,14 +89,23 @@ def test_word(database, word_to_learn, say_meaning=False):
             break
         else:
             print(bold_text(f'end frequency {freq}'))
+    word_not_familiar = ""
     for word in word_studied:
         #print(full_score[word])
         if full_score[word] == 0:
             if word_to_learn[word]['f'] > 0:
                 word_to_learn[word]['f'] -= 1
         else:
+            word_self, list_name = word.split("@", maxsplit=1)
+            print(word_self)
+            print(" ", database[list_name][word_self]['m'])
+            word_n_string = f"{word_self}\n\t{database[list_name][word_self]['m']}\n"
+            word_not_familiar += word_n_string
             word_to_learn[word]['f'] += 1
             word_to_learn[word]['h'] += 1
+    word_to_learn_file = '/'.join(sys.argv[1].split("/")[:-1]) + "/word_to_learn.txt"
+    with open(word_to_learn_file, 'w') as f:
+        f.write(word_not_familiar)
 
 FUNCTION_TABLE = [
     {
@@ -103,11 +120,14 @@ FUNCTION_TABLE = [
     } 
 ]
 
+USED_TEST = False
+
 def main():
     database_file_path = sys.argv[1]
     database_file = open(database_file_path, 'r')
     database = yaml.load(database_file)
     database_file.close()
+    
     if len(database.keys()) > 0:
         print("choose a dictionary or type in a new dictionary name:")
         for key in database.keys():
@@ -142,6 +162,9 @@ def main():
             chosen_func_index = int(input_text)
         if chosen_func_index < len(FUNCTION_TABLE):
             FUNCTION_TABLE[chosen_func_index]['func'](database, word_to_learn)
+            if FUNCTION_TABLE[chosen_func_index]['name'] == 'test':
+                global USED_TEST
+                USED_TEST = True
     
 
 if __name__ == '__main__':
